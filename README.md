@@ -11,3 +11,6 @@ make bootimage
 ```
 fastboot flash boot boot.img
 ```
+
+Special Thanks : 
+@pjgowtham for bootctrl gpt-utils Scripts
