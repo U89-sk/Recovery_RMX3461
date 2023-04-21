@@ -5,12 +5,12 @@
 #
 
 DEVICE_PATH := device/realme/RMX3461
+DEVICEVBM_PATH := $(DEVICE_PATH)/recovery/root/lib/modules
 
 # For building with minimal manifest
 ALLOW_MISSING_DEPENDENCIES := true
 BUILD_BROKEN_DUP_RULES := true
 BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
-BUILD_BROKEN_MISSING_REQUIRED_MODULES := true
 
 # Architecture
 TARGET_ARCH := arm64
@@ -44,26 +44,31 @@ TARGET_BOARD_PLATFORM_GPU := qcom-adreno642L
 TARGET_USES_HARDWARE_QCOM_BOOTCTRL := true
 QCOM_BOARD_PLATFORMS += lahaina
 
-# Recovery
-TARGET_NO_RECOVERY := true
-
 # Kernel
 TARGET_KERNEL_ARCH := arm64
 TARGET_KERNEL_HEADER_ARCH := arm64
 TARGET_NO_KERNEL := true
-BOARD_VENDOR_CMDLINE := console=ttyMSM0,115200n8 androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=0 loop.max_part=7 cgroup.memory=nokmem,nosocket pcie_ports=compat loop.max_part=7 iptable_raw.raw_before_defrag=1 ip6table_raw.raw_before_defrag=1 kpti=off printk.devkmsg=on iptable_raw.raw_before_defrag=1 printk.devkmsg=on
+BOARD_VENDOR_CMDLINE := console=ttyMSM0,115200n8 androidboot.hardware=qcom androidboot.console=ttyMSM0 androidboot.memcg=1 lpm_levels.sleep_disabled=1 video=vfb:640x400,bpp=32,memsize=3072000 msm_rtb.filter=0x237 service_locator.enable=1 androidboot.usbcontroller=a600000.dwc3 swiotlb=0 loop.max_part=7 cgroup.memory=nokmem,nosocket pcie_ports=compat loop.max_part=7 iptable_raw.raw_before_defrag=1 ip6table_raw.raw_before_defrag=1 kpti=off printk.devkmsg=on iptable_raw.raw_before_defrag=1
 BOARD_VENDOR_CMDLINE += androidboot.selinux=permissive
 BOARD_BOOT_HEADER_VERSION := 4
-BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
-BOARD_KERNEL_PAGESIZE := 4096
-BOARD_KERNEL_BASE := 0x00000000
+BOARD_PAGE_SIZE := 4096
+BOARD_VENDOR_BASE := 0x00000000
+BOARD_KERNEL_OFFSET := 0x00008000
 BOARD_RAMDISK_OFFSET := 0x01000000
-BOARD_KERNEL_TAGS_OFFSET := 0x00000100
-BOARD_TAGS_OFFSET := 0x07c88000
+BOARD_TAGS_OFFSET := 0x00000100
+BOARD_HEADER_SIZE := 2112
+
+BOARD_MKBOOTIMG_ARGS += --vendor_cmdline $(BOARD_VENDOR_CMDLINE)
+BOARD_MKBOOTIMG_ARGS += --header_version $(BOARD_BOOT_HEADER_VERSION)
+BOARD_MKBOOTIMG_ARGS += --pagesize $(BOARD_PAGE_SIZE) --board ""
+BOARD_MKBOOTIMG_ARGS += --kernel_offset $(BOARD_KERNEL_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_TAGS_OFFSET)
 BOARD_RAMDISK_USE_LZ4 := true
 
-# Kernel modules
-BOOT_KERNEL_MODULES := $(strip $(shell cat $(DEVICE_PATH)/modules.include.recovery))
+# Vendot boot module
+BOARD_VENDOR_RAMDISK_KERNEL_MODULES := $(DEVICEVBM_PATH)/msm_drm.ko
+BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD := $(DEVICEVBM_PATH)/msm_drm.ko
 
 # DTBO
 BOARD_KERNEL_SEPARATED_DTBO := true
@@ -90,12 +95,6 @@ VENDOR_SECURITY_PATCH := $(PLATFORM_SECURITY_PATCH)
 PLATFORM_VERSION := 99.87.36
 PLATFORM_VERSION_LAST_STABLE := $(PLATFORM_VERSION)
 
-# Vendor_Boot Flags
-BOARD_USES_GENERIC_KERNEL_IMAGE := true
-BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
-BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT := true
-BOARD_MOVE_GSI_AVB_KEYS_TO_VENDOR_BOOT := true
- 
 # Partitions
 BOARD_FLASH_BLOCK_SIZE := 262144
 BOARD_BOOTIMAGE_PARTITION_SIZE := 0xC000000
@@ -114,17 +113,29 @@ BOARD_USES_VENDOR_DLKMIMAGE := true
 
 # Dynamic Partition
 BOARD_SUPER_PARTITION_SIZE := 0x260000000
-BOARD_SUPER_PARTITION_GROUPS := qti_dynamic_partitions
-BOARD_QTI_DYNAMIC_PARTITIONS_SIZE := 0x25FC00000
-BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST := system system_ext product vendor vendor_dlkm odm
+BOARD_SUPER_PARTITION_GROUPS := realme_dynamic_partitions
+BOARD_REALME_DYNAMIC_PARTITIONS_SIZE := 0x25FC00000
+BOARD_REALME_DYNAMIC_PARTITIONS_PARTITION_LIST := system system_ext product vendor vendor_dlkm odm
 
-BOARD_PARTITION_LIST := $(call to-upper, $(BOARD_QTI_DYNAMIC_PARTITIONS_PARTITION_LIST))
+BOARD_PARTITION_LIST := $(call to-upper, $(BOARD_REALME_DYNAMIC_PARTITIONS_PARTITION_LIST))
 $(foreach p, $(BOARD_PARTITION_LIST), $(eval BOARD_$(p)IMAGE_FILE_SYSTEM_TYPE := erofs))
 $(foreach p, $(BOARD_PARTITION_LIST), $(eval TARGET_COPY_OUT_$(p) := $(call to-lower, $(p))))
 
+# Recovery
+TARGET_NO_RECOVERY := true
+BOARD_HAS_NO_SELECT_BUTTON := true
+BOARD_SUPPRESS_SECURE_ERASE := true
+
+# Vendor_Boot Flags
+BOARD_USES_GENERIC_KERNEL_IMAGE := true
+BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT := true
+BOARD_INCLUDE_RECOVERY_RAMDISK_IN_VENDOR_BOOT := true
+BOARD_MOVE_GSI_AVB_KEYS_TO_VENDOR_BOOT := true
+
 # Add root folders
 BOARD_ROOT_EXTRA_FOLDERS := bluetooth dsp firmware persist my_bigball my_carrier my_company my_custom my_engineering my_heytap my_manifest my_preload my_product my_region my_stock my_version
-BOARD_SUPPRESS_SECURE_ERASE := true
+
+# System root
 BOARD_BUILD_SYSTEM_ROOT_IMAGE := false
 
 # Add properties
@@ -150,7 +161,7 @@ TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/recovery/root/system/etc/recovery.fstab
 TARGET_USE_CUSTOM_LUN_FILE_PATH := "/sys/devices/platform/soc/a600000.ssusb/a600000.dwc3/gadget/lun.%d/file"
 
 # Add TW_DEVICE_VERSION
-TW_DEVICE_VERSION := RUI-3.0_Think_Thought
+TW_DEVICE_VERSION := K50i_RUI-4.0_by_Think_Thought
 
 # TWRP Configuration
 TW_THEME := portrait_hdpi
@@ -180,7 +191,7 @@ TW_NO_LEGACY_PROPS := true
 TW_NO_SCREEN_BLANK := true
 TW_EXCLUDE_APEX := true
 TW_INCLUDE_FASTBOOTD := true
-TW_LOAD_VENDOR_MODULES := "msm_drm.ko"
+TW_LOAD_VENDOR_MODULES := "adsp_loader_dlkm.ko apr_dlkm.ko q6_notifier_dlkm.ko q6_pdr_dlkm.ko snd_event_dlkm.ko"
 
 # Include some binaries
 TW_INCLUDE_LIBRESETPROP := true
@@ -194,7 +205,3 @@ TW_CUSTOM_CPU_POS := "170"
 TWRP_INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
 TWRP_EVENT_LOGGING := true
-
-# Twrp Installer
-USE_RECOVERY_INSTALLER := true
-RECOVERY_INSTALLER_PATH := $(DEVICE_PATH)/installer
