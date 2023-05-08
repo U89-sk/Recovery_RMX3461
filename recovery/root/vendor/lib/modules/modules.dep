@@ -1,0 +1,6 @@
+/lib/modules/q6_notifier_dlkm.ko: /lib/modules/q6_pdr_dlkm.ko
+/lib/modules/q6_pdr_dlkm.ko:
+/lib/modules/apr_dlkm.ko: /lib/modules/q6_notifier_dlkm.ko /lib/modules/q6_pdr_dlkm.ko /lib/modules/snd_event_dlkm.ko
+/lib/modules/snd_event_dlkm.ko:
+/lib/modules/msm_drm.ko:
+/lib/modules/adsp_loader_dlkm.ko: /lib/modules/apr_dlkm.ko /lib/modules/q6_notifier_dlkm.ko /lib/modules/q6_pdr_dlkm.ko /lib/modules/snd_event_dlkm.ko
